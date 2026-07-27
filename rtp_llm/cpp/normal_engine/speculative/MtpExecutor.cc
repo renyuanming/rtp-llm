@@ -191,7 +191,6 @@ MtpExecutor::MtpExecutor(const EngineInitParams&                        params,
     }
 
     auto target_cache_layer_layout = cache_manager->getMainModelGroupedCacheLayerLayout();
-    auto draft_cache_layer_layout  = cache_manager->getMTPModuleGroupedCacheLayerLayout(0);
 
     GptModelInitParams model_init_params(
         {params.gpt_weights,
@@ -238,28 +237,32 @@ MtpExecutor::MtpExecutor(const EngineInitParams&                        params,
     const auto& mtp_model_params = *propose_params->mtp_model_params_;
     for (size_t mtp_module_index = 0; mtp_module_index < mtp_model_params.size(); ++mtp_module_index) {
         auto& mtp_params = mtp_model_params[mtp_module_index];
-        auto  model_params =
-            GptModelInitParams({mtp_params->gpt_weights,
-                                Executor::genModelDescription(mtp_params->model_config_,
-                                                              mtp_params->parallelism_config,
-                                                              mtp_params->eplb_config,
-                                                              mtp_params->moe_config),
-                                cache_manager ? std::make_optional(draft_cache_layer_layout) : std::nullopt,
-                                mtp_params->model_id,
-                                mtp_params->parallelism_config,
-                                params.hw_kernel_config,
-                                params.profiling_debug_logging_config,
-                                params.runtime_config,
-                                params.concurrency_config,
-                                params.sp_config,
-                                params.device_resource_config,
-                                mla_ops_type,
-                                mtp_params->model_config_.max_seq_len,
-                                mtp_params->model_config_.hidden_size,
-                                mtp_params->model_config_.attn_config.tokens_per_block,
-                                mtp_params->model_config_.attn_config.kernel_tokens_per_block,
-                                cache_manager,
-                                std::make_optional(static_cast<int>(mtp_module_index))});
+        // Layout and cache config must be selected by the same module index.
+        auto draft_cache_layer_layout = cache_manager ?
+                                            std::make_optional(cache_manager->getMTPModuleGroupedCacheLayerLayout(
+                                                static_cast<int>(mtp_module_index))) :
+                                            std::nullopt;
+        auto model_params             = GptModelInitParams({mtp_params->gpt_weights,
+                                                            Executor::genModelDescription(mtp_params->model_config_,
+                                                                              mtp_params->parallelism_config,
+                                                                              mtp_params->eplb_config,
+                                                                              mtp_params->moe_config),
+                                                            draft_cache_layer_layout,
+                                                            mtp_params->model_id,
+                                                            mtp_params->parallelism_config,
+                                                            params.hw_kernel_config,
+                                                            params.profiling_debug_logging_config,
+                                                            params.runtime_config,
+                                                            params.concurrency_config,
+                                                            params.sp_config,
+                                                            params.device_resource_config,
+                                                            mla_ops_type,
+                                                            mtp_params->model_config_.max_seq_len,
+                                                            mtp_params->model_config_.hidden_size,
+                                                            mtp_params->model_config_.attn_config.tokens_per_block,
+                                                            mtp_params->model_config_.attn_config.kernel_tokens_per_block,
+                                                            cache_manager,
+                                                            std::make_optional(static_cast<int>(mtp_module_index))});
         if (!params.py_sp_model.is_none()) {
             RTP_LLM_LOG_INFO("[speculative decoding] using py model");
             draft_model_.reset(new PyWrappedModel(model_params, params.py_sp_model, false, false));

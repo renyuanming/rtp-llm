@@ -99,7 +99,14 @@ def _write_cp_cache_store(
     """Write a CP linear layer using that layer's tag-local cache metadata."""
     cache_store_inputs = attention_inputs.cache_store_inputs
     cache_store_writer = attention_inputs.cache_store_writer
-    if cache_store_inputs is None or cache_store_writer is None:
+    if cache_store_inputs is None:
+        return
+    if cache_store_writer is None:
+        logging.warning(
+            "cache_store_inputs present but cache_store_writer missing for tag %s; "
+            "skip CP cache-store write",
+            kv_cache.tag,
+        )
         return
     cache_store_writer.write(cache_store_inputs, kv_cache)
 

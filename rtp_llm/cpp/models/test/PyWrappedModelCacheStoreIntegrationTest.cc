@@ -440,6 +440,16 @@ Scenario makeScenario(const std::string& name) {
     if (name == "mtp_sub_config") {
         return makeMtpScenario();
     }
+    if (name == "warmup") {
+        auto scenario          = makeMultiTagScenario();
+        scenario.inputs.warmup = true;
+        return scenario;
+    }
+    if (name == "no_pd_separation") {
+        auto scenario                 = makeMultiTagScenario();
+        scenario.inputs.pd_separation = false;
+        return scenario;
+    }
     throw std::invalid_argument("unknown PyWrappedModel cache-store integration scenario: " + name);
 }
 

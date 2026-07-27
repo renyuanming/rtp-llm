@@ -200,7 +200,9 @@ static std::string cacheKeyAt(const torch_ext::PyCacheStoreInputs& inputs,
                               int                                  layer_id,
                               const std::string&                   tag      = "default",
                               size_t                               model_id = 0) {
-    return makeCacheKey(model_id, std::to_string(inputs.cache_keys.data_ptr<int64_t>()[index]), layer_id, tag);
+    // Index by logical position so non-contiguous cache_keys tensors resolve correctly.
+    const int64_t key = inputs.cache_keys.flatten()[static_cast<int64_t>(index)].item<int64_t>();
+    return makeCacheKey(model_id, std::to_string(key), layer_id, tag);
 }
 
 static void expectMlaPhysicalViewUsesExplicitStride(const torch::Tensor& kv_cache_base) {

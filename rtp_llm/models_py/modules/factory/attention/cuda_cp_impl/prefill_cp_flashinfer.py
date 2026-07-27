@@ -147,12 +147,6 @@ class CPFlashInferImpl(FMHAImplBase):
         self.rope_params = self.rope_kvcache_impl.prepare(attn_inputs)
         self.write_cache_store_impl = common.create_write_cache_store_impl(attn_inputs)
 
-        self.attn_inputs = attn_inputs
-
-    def support(self) -> bool:
-        """Check if this implementation supports current inputs."""
-        return self.fmha_impl.support(self.attn_inputs)
-
     @classmethod
     def support(cls, attn_configs: AttentionConfigs, attn_inputs: PyAttentionInputs):
         return True

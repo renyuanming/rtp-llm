@@ -223,14 +223,35 @@ void runtimeWriteCacheStore(const torch_ext::PyCacheStoreInputs& cache_store_inp
     const bool kv_scale_gpu_mem = has_kv_scale && layer_kv.kv_scale_base.is_cuda();
 
     const size_t total_batch_size = static_cast<size_t>(param.input_lengths_host.numel());
-    RTP_LLM_CHECK_WITH_INFO(param.prefix_lengths_host.numel() == static_cast<int64_t>(context_batch_size)
-                                && param.request_pd_separation.numel() == static_cast<int64_t>(context_batch_size)
-                                && total_batch_size >= context_batch_size
-                                && param.host_kv_cache_offset.size(0) == static_cast<int64_t>(total_batch_size)
-                                && param.cache_keys.defined() && param.cache_keys.dim() == 2
+    RTP_LLM_CHECK_WITH_INFO(param.prefix_lengths_host.numel() == static_cast<int64_t>(context_batch_size),
+                            "cache-store tag=%s prefix_lengths numel=%ld != context batch=%zu",
+                            layer_kv.tag.c_str(),
+                            param.prefix_lengths_host.numel(),
+                            context_batch_size);
+    RTP_LLM_CHECK_WITH_INFO(param.request_pd_separation.numel() == static_cast<int64_t>(context_batch_size),
+                            "cache-store tag=%s request_pd_separation numel=%ld != context batch=%zu",
+                            layer_kv.tag.c_str(),
+                            param.request_pd_separation.numel(),
+                            context_batch_size);
+    RTP_LLM_CHECK_WITH_INFO(total_batch_size >= context_batch_size,
+                            "cache-store tag=%s input_lengths numel=%zu < context batch=%zu",
+                            layer_kv.tag.c_str(),
+                            total_batch_size,
+                            context_batch_size);
+    RTP_LLM_CHECK_WITH_INFO(param.host_kv_cache_offset.size(0) == static_cast<int64_t>(total_batch_size),
+                            "cache-store tag=%s block table rows=%ld != total batch=%zu",
+                            layer_kv.tag.c_str(),
+                            param.host_kv_cache_offset.size(0),
+                            total_batch_size);
+    RTP_LLM_CHECK_WITH_INFO(param.cache_keys.defined() && param.cache_keys.dim() == 2
                                 && param.cache_keys.size(0) == static_cast<int64_t>(context_batch_size),
-                            "inconsistent cache-store batch tensor shapes for tag=%s",
-                            layer_kv.tag.c_str());
+                            "cache-store tag=%s cache_keys must be [context=%zu, width], got defined=%d dim=%ld "
+                            "rows=%ld",
+                            layer_kv.tag.c_str(),
+                            context_batch_size,
+                            param.cache_keys.defined(),
+                            param.cache_keys.defined() ? param.cache_keys.dim() : -1L,
+                            param.cache_keys.defined() && param.cache_keys.dim() > 0 ? param.cache_keys.size(0) : -1L);
 
     const size_t decoder_batch_size = total_batch_size - context_batch_size;
     // cache_keys is laid out [batch, global_max_blocks]; this logical width is INDEPENDENT

@@ -141,6 +141,9 @@ void CacheStoreAsyncWriter::waitAllDone() {
 void CacheStoreAsyncWriter::write(const torch_ext::PyCacheStoreInputs& cache_store_inputs,
                                   const torch_ext::LayerKVCache&       layer_kv) {
     if (!active_cache_store_ || !cache_config_) {
+        RTP_LLM_LOG_DEBUG("cache store or cache config unavailable, skip cache-store write for tag=%s layer=%d",
+                          layer_kv.tag.c_str(),
+                          layer_kv.layer_id);
         return;
     }
 

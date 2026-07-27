@@ -70,6 +70,7 @@ cc_library(
     ] + torch_deps() + select_py_bindings() + select({
         "@//:using_cuda12": [
             "//rtp_llm/cpp/utils:device_pin",
+            "//rtp_llm/models_py/bindings:op_defs",
             "//rtp_llm/models_py/bindings/cuda:cuda_host_utils",
             "//rtp_llm/models_py/bindings/cuda/ops:gpu_base",
         ],

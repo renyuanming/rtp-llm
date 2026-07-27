@@ -193,6 +193,20 @@ class PyWrappedModelCacheStoreIntegrationTest(unittest.TestCase):
         )
         self.assertTrue(all("_tag_draft" in block["key"] for block in record["blocks"]))
 
+    def test_warmup_forward_does_not_write_cache_store(self) -> None:
+        model = CacheStoreForwardModel()
+        result = run_scenario(model, "warmup")
+
+        self.assertEqual(model.forward_calls, 1)
+        self.assertEqual(result["records"], [])
+
+    def test_non_pd_separation_forward_does_not_write_cache_store(self) -> None:
+        model = CacheStoreForwardModel()
+        result = run_scenario(model, "no_pd_separation")
+
+        self.assertEqual(model.forward_calls, 1)
+        self.assertEqual(result["records"], [])
+
 
 if __name__ == "__main__":
     unittest.main()
